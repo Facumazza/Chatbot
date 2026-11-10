@@ -84,6 +84,26 @@ class CatalogRepository {
                 .toList();
     }
 
+    Optional<String> externalId(UUID tenantId, UUID productId) {
+        return jdbc.sql("SELECT external_id FROM products WHERE tenant_id = :tenantId AND id = :id AND external_id IS NOT NULL")
+                .param("tenantId", tenantId)
+                .param("id", productId)
+                .query(String.class)
+                .optional();
+    }
+
+    boolean requiresImage(UUID tenantId, UUID productId) {
+        return jdbc.sql("""
+                SELECT coalesce((attributes->>'requiresImage')::boolean, false)
+                FROM products WHERE tenant_id = :tenantId AND id = :id
+                """)
+                .param("tenantId", tenantId)
+                .param("id", productId)
+                .query(Boolean.class)
+                .optional()
+                .orElse(false);
+    }
+
     Optional<Instant> lastSync(UUID tenantId) {
         return Optional.ofNullable(jdbc.sql("""
                 SELECT max(synced_at) FROM products WHERE tenant_id = :tenantId AND external_id IS NOT NULL

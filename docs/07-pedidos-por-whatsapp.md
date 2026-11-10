@@ -1,6 +1,13 @@
 # Pedidos por WhatsApp
 
-Estado: diseño para validar. Fecha: 2026-11-10.
+Estado: implementado con la opción B y probado contra la web simulada (11 pruebas). Falta la prueba con la web real. Fecha: 2026-11-10.
+
+Protecciones implementadas:
+- El pedido solo se crea si el último mensaje del cliente es una confirmación explícita ("sí", "dale", "confirmo"). El control está en el código, no depende del modelo.
+- No se crea un segundo pedido mientras haya uno pendiente de pago en la conversación.
+- El envío a domicilio se rechaza antes de llamar a la web.
+- Si la web rechaza el pedido, el bot recibe el motivo y deriva.
+- Los avisos de estado (pago aprobado, rechazado, listo, cancelado) son textos fijos. Cada uno se envía una sola vez; si la ventana de 24 horas está cerrada, espera a que el cliente vuelva a escribir.
 
 ## Objetivo
 

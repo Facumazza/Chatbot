@@ -134,6 +134,24 @@ class ChatCompletionsClientTests {
                 .withHeader("Authorization", equalTo("Bearer clave-gemini")));
     }
 
+    @Test
+    void exhaustedDailyQuotaIsNotRetried() {
+        GEMINI.stubFor(post(urlEqualTo(PATH)).willReturn(aResponse().withStatus(429)
+                .withHeader("Content-Type", "application/json")
+                .withBody("""
+                        [{"error":{"code":429,"status":"RESOURCE_EXHAUSTED","message":"quota","details":[
+                          {"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[
+                            {"quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaValue":"20"}]}]}}]
+                        """)));
+
+        assertThatThrownBy(() -> client.respond(new LlmRequest("m", "i", new ArrayList<>(), tools)))
+                .isInstanceOfSatisfying(LlmException.class, e -> {
+                    assertThat(e.isRetryable()).isFalse();
+                    assertThat(e.getMessage()).contains("cupo diario");
+                });
+        GEMINI.verify(1, com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor(urlEqualTo(PATH)));
+    }
+
     private JsonNode lastRequest() {
         return json.readTree(GEMINI.getAllServeEvents().getFirst().getRequest().getBodyAsString());
     }

@@ -37,6 +37,12 @@ public class CustomerService {
         return new CustomerProfile(customer.displayName(), customer.getLocality(), conversations > 1);
     }
 
+    /** Teléfono para cargar un pedido en la web. Nunca se expone al modelo. */
+    @Transactional(readOnly = true)
+    public Optional<String> phoneNumber(UUID customerId) {
+        return customers.findById(customerId).map(Customer::getPhoneNumber);
+    }
+
     /** Lo que el asistente aprendió en la charla. Los valores vacíos se ignoran. */
     @Transactional
     public void recordDetails(UUID customerId, String fullName, String locality, String interest, UUID sourceMessageId) {

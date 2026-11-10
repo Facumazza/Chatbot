@@ -41,6 +41,15 @@ class LocalMediaStorage implements MediaStorage {
         }
     }
 
+    @Override
+    public byte[] read(String storageKey) throws IOException {
+        Path file = root.resolve(storageKey).normalize();
+        if (!file.startsWith(root)) {
+            throw new IOException("Ruta de archivo inválida");
+        }
+        return Files.readAllBytes(file);
+    }
+
     private static MessageDigest sha256() {
         try {
             return MessageDigest.getInstance("SHA-256");

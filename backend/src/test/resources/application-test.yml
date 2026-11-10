@@ -2,6 +2,11 @@ whatsapp:
   app-secret: test-app-secret
   verify-token: test-verify-token
 
+orders:
+  grenlus:
+    username: bot-whatsapp
+    password: clave-web-de-prueba
+
 llm:
   api-key: clave-de-prueba
   model: gpt-6.1-terra

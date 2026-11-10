@@ -22,6 +22,15 @@ final class TurnState {
         this.input = input;
     }
 
+    String lastCustomerText() {
+        for (int i = input.history().size() - 1; i >= 0; i--) {
+            if (input.history().get(i).fromCustomer()) {
+                return input.history().get(i).text();
+            }
+        }
+        return "";
+    }
+
     UUID lastCustomerMessageId() {
         for (int i = input.history().size() - 1; i >= 0; i--) {
             if (input.history().get(i).fromCustomer()) {

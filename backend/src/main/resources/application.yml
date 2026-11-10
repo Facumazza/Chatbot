@@ -79,6 +79,14 @@ catalog:
     public-url: ${CATALOG_GRENLUS_PUBLIC_URL:https://grenlus.pages.dev}
     max-age: PT2H
 
+orders:
+  status-interval: PT2M
+  grenlus:
+    # Cuenta de servicio en la web. Sin usuario y contraseña, los pedidos por WhatsApp se derivan.
+    api-url: ${CATALOG_GRENLUS_API_URL:}
+    username: ${GRENLUS_BOT_USERNAME:}
+    password: ${GRENLUS_BOT_PASSWORD:}
+
 app:
   security:
     encryption-key: ${ENCRYPTION_KEY:}

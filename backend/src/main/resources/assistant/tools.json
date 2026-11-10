@@ -102,6 +102,73 @@
   },
   {
     "type": "function",
+    "name": "crear_pedido",
+    "description": "Carga el pedido en el sistema de Grenlus, con pago por transferencia. Usala SOLO después de mostrar el resumen con el total de calcular_presupuesto y de que el cliente responda que sí en su último mensaje. Devuelve el número de pedido, el total y los datos para transferir.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "product_id": { "type": "string", "description": "id devuelto por buscar_productos." },
+        "design_size": {
+          "type": ["string", "null"],
+          "description": "Tamaño del diseño más grande: CHICA, MEDIA o GRANDE. null si el producto no tiene tamaños."
+        },
+        "lines": {
+          "type": "array",
+          "description": "Una línea por cada combinación de talle y color, igual que en calcular_presupuesto.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "quantity": { "type": "integer", "description": "Unidades de esta línea." },
+              "size": { "type": ["string", "null"], "description": "Talle, o null si el producto no usa talles." },
+              "color": { "type": ["string", "null"], "description": "Color, o null si no se eligió." }
+            },
+            "required": ["quantity", "size", "color"],
+            "additionalProperties": false
+          }
+        },
+        "designs": {
+          "type": "array",
+          "description": "Una entrada por posición estampada, en el orden en que el cliente mandó las imágenes.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "position": {
+                "type": "string",
+                "description": "FRENTE, ESPALDA, PECHO, MANGA_DERECHA, MANGA_IZQUIERDA u OTRA."
+              },
+              "notes": { "type": ["string", "null"], "description": "Indicaciones del cliente para esa posición." }
+            },
+            "required": ["position", "notes"],
+            "additionalProperties": false
+          }
+        },
+        "customer_name": { "type": "string", "description": "Nombre para el pedido." },
+        "delivery_method": {
+          "type": "string",
+          "description": "RETIRO (en el local) o COORDINAR (a acordar con el equipo). El envío a domicilio solo se pide desde la web."
+        }
+      },
+      "required": ["product_id", "design_size", "lines", "designs", "customer_name", "delivery_method"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "adjuntar_comprobante",
+    "description": "Adjunta al pedido pendiente la última imagen que mandó el cliente, como comprobante de transferencia. Usala cuando el cliente mande la foto del comprobante.",
+    "strict": true,
+    "parameters": { "type": "object", "properties": {}, "required": [], "additionalProperties": false }
+  },
+  {
+    "type": "function",
+    "name": "consultar_pedido",
+    "description": "Devuelve el estado actual del último pedido del cliente según el sistema de Grenlus.",
+    "strict": true,
+    "parameters": { "type": "object", "properties": {}, "required": [], "additionalProperties": false }
+  },
+  {
+    "type": "function",
     "name": "derivar_a_operador",
     "description": "Pasa la conversación a una persona del equipo. Después de usarla, avisale al cliente que lo van a atender y no prometas tiempos.",
     "strict": true,

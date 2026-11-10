@@ -74,12 +74,17 @@ final class LlmHttp {
     }
 
     private LlmException classify(RestClientResponseException e) {
-        JsonNode error = parseError(e.getResponseBodyAsString());
+        String body = e.getResponseBodyAsString();
+        JsonNode error = parseError(body);
         String code = error.path("code").isString() ? error.path("code").asString("") : error.path("status").asString("");
         int status = e.getStatusCode().value();
-        log.warn("El proveedor de IA respondió {} ({})", status, code.isBlank() ? "sin código" : code);
-        boolean retryable = !BILLING_CODES.contains(code) && (status == 429 || status >= 500);
-        return new LlmException("Proveedor de IA " + status + (code.isBlank() ? "" : " " + code), retryable);
+        // Gemini informa el cupo agotado en el detalle: el diario no se recupera hasta el día siguiente.
+        boolean dailyQuota = status == 429 && body.contains("PerDay");
+        log.warn("El proveedor de IA respondió {} ({}){}", status, code.isBlank() ? "sin código" : code,
+                dailyQuota ? ": cupo diario agotado" : "");
+        boolean retryable = !BILLING_CODES.contains(code) && !dailyQuota && (status == 429 || status >= 500);
+        return new LlmException("Proveedor de IA " + status + (dailyQuota ? " cupo diario agotado" : code.isBlank() ? "" : " " + code),
+                retryable);
     }
 
     private JsonNode parseError(String body) {

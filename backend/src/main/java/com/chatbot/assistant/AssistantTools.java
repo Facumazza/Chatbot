@@ -7,13 +7,18 @@ import com.chatbot.catalog.Quote;
 import com.chatbot.catalog.QuoteRequest;
 import com.chatbot.customer.CustomerService;
 import com.chatbot.customer.LeadService;
+import com.chatbot.order.OrderResult;
+import com.chatbot.order.OrderService;
+import com.chatbot.order.PlaceOrderRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -31,19 +36,25 @@ class AssistantTools {
 
     private static final Logger log = LoggerFactory.getLogger(AssistantTools.class);
 
+    private static final Pattern CONFIRMATION = Pattern.compile(
+            "(^|[^a-záéíóúñ])(s[ií]|dale|confirmo|confirmado|ok|okey|listo|de acuerdo|perfecto|correcto|hacelo|avanz[aá]|va)([^a-záéíóúñ]|$)");
+    private static final Pattern NEGATION = Pattern.compile("(^|[^a-záéíóúñ])(no|todav[ií]a no|esper[aá])([^a-záéíóúñ]|$)");
+
     private final CatalogService catalog;
     private final FaqService faqs;
     private final CustomerService customers;
     private final LeadService leads;
+    private final OrderService orders;
     private final JsonMapper jsonMapper;
     private final ArrayNode definitions;
 
     AssistantTools(CatalogService catalog, FaqService faqs, CustomerService customers, LeadService leads,
-            JsonMapper jsonMapper) throws IOException {
+            OrderService orders, JsonMapper jsonMapper) throws IOException {
         this.catalog = catalog;
         this.faqs = faqs;
         this.customers = customers;
         this.leads = leads;
+        this.orders = orders;
         this.jsonMapper = jsonMapper;
         try (InputStream tools = new ClassPathResource("assistant/tools.json").getInputStream()) {
             this.definitions = (ArrayNode) jsonMapper.readTree(tools);
@@ -65,6 +76,12 @@ class AssistantTools {
                 case "buscar_preguntas_frecuentes" -> findFaqs(args);
                 case "registrar_datos_cliente" -> recordCustomer(args, state);
                 case "registrar_oportunidad" -> recordLead(args, state);
+                case "crear_pedido" -> placeOrder(args, state);
+                case "adjuntar_comprobante" -> orderResult(orders.attachReceipt(state.input.conversationId()),
+                        "Comprobante enviado. Avisale al cliente que el equipo lo va a revisar y que le confirmamos por acá.");
+                case "consultar_pedido" -> orders.currentOrder(state.input.conversationId())
+                        .<Object>map(order -> orderResult(order, "Contale el estado en palabras simples."))
+                        .orElse(Map.of("error", "El cliente no tiene pedidos cargados por WhatsApp."));
                 case "derivar_a_operador" -> handoff(args, state);
                 default -> Map.of("error", "Herramienta desconocida");
             };
@@ -144,6 +161,55 @@ class AssistantTools {
                 state.lastQuoteJson,
                 state.input.receivedFiles());
         return Map.of("saved", true, "attachedDesigns", state.input.receivedFiles().size());
+    }
+
+    /**
+     * Control fijo, independiente del modelo: el pedido solo se carga si el último mensaje del
+     * cliente es una confirmación explícita.
+     */
+    private Object placeOrder(JsonNode args, TurnState state) {
+        if (!isExplicitConfirmation(state.lastCustomerText())) {
+            return Map.of("error", "El cliente todavía no confirmó. Mostrale el resumen con el total y preguntale si confirma el pedido.");
+        }
+        List<QuoteRequest.Line> lines = new ArrayList<>();
+        args.path("lines").forEach(line -> lines.add(new QuoteRequest.Line(
+                line.path("quantity").asInt(0), text(line, "size"), text(line, "color"))));
+        List<PlaceOrderRequest.Design> designs = new ArrayList<>();
+        args.path("designs").forEach(design -> designs.add(new PlaceOrderRequest.Design(
+                String.valueOf(text(design, "position")).toUpperCase(Locale.ROOT), text(design, "notes"))));
+        OrderResult result = orders.placeOrder(new PlaceOrderRequest(
+                state.input.conversationId(), state.input.customerId(), uuid(text(args, "product_id")),
+                text(args, "design_size"), lines, designs, text(args, "customer_name"),
+                String.valueOf(text(args, "delivery_method")).toUpperCase(Locale.ROOT)));
+        return orderResult(result, "Pasale al cliente el número de pedido, el total y los datos para transferir, "
+                + "y pedile que mande la foto del comprobante por acá. No digas que está confirmado: "
+                + "se confirma cuando el equipo aprueba el pago.");
+    }
+
+    private static Object orderResult(OrderResult result, String instruction) {
+        return switch (result) {
+            case OrderResult.Rejected rejected -> Map.of("error", rejected.reason());
+            case OrderResult.Placed placed -> {
+                Map<String, Object> output = new LinkedHashMap<>();
+                output.put("orderNumber", placed.orderNumber());
+                output.put("total", placed.total());
+                output.put("status", placed.status());
+                output.put("paymentStatus", placed.paymentStatus());
+                if (!placed.transferDetails().isEmpty()) {
+                    output.put("transferDetails", placed.transferDetails());
+                }
+                if (placed.alreadyExisted()) {
+                    output.put("note", "Este pedido ya existía: no se creó otro.");
+                }
+                output.put("instruction", instruction);
+                yield output;
+            }
+        };
+    }
+
+    static boolean isExplicitConfirmation(String text) {
+        String normalized = text == null ? "" : text.toLowerCase(Locale.ROOT).trim();
+        return CONFIRMATION.matcher(normalized).find() && !NEGATION.matcher(normalized).find();
     }
 
     private Object handoff(JsonNode args, TurnState state) {

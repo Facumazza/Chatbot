@@ -56,6 +56,7 @@ public abstract class IntegrationTest {
         registry.add("whatsapp.graph-base-url", META::baseUrl);
         registry.add("llm.base-url", () -> META.baseUrl() + "/v1");
         registry.add("catalog.grenlus.api-url", () -> META.baseUrl() + "/grenlus");
+        registry.add("orders.grenlus.api-url", () -> META.baseUrl() + "/grenlus");
     }
 
     @BeforeEach

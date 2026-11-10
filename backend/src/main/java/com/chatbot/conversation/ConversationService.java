@@ -4,7 +4,9 @@ import com.chatbot.customer.CustomerService;
 import com.chatbot.shared.Uuids;
 import com.chatbot.tenant.TenantContext;
 import jakarta.persistence.EntityManager;
+import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,8 @@ public class ConversationService {
     private final TurnQueue turnQueue;
     private final CustomerService customers;
     private final ConversationTransitions transitions;
+    private final ConversationHistory history;
+    private final MediaStorage mediaStorage;
     private final EntityManager entityManager;
 
     ConversationService(
@@ -32,6 +36,8 @@ public class ConversationService {
             TurnQueue turnQueue,
             CustomerService customers,
             ConversationTransitions transitions,
+            ConversationHistory history,
+            MediaStorage mediaStorage,
             EntityManager entityManager) {
         this.conversations = conversations;
         this.messages = messages;
@@ -39,6 +45,8 @@ public class ConversationService {
         this.turnQueue = turnQueue;
         this.customers = customers;
         this.transitions = transitions;
+        this.history = history;
+        this.mediaStorage = mediaStorage;
         this.entityManager = entityManager;
     }
 
@@ -134,6 +142,36 @@ public class ConversationService {
         entityManager.persist(Message.pendingText(Uuids.v7(), conversationId, Message.SenderType.ASSISTANT, body, now));
         conversation.registerActivity(now);
         return true;
+    }
+
+    /**
+     * Aviso del sistema, por ejemplo un cambio de estado del pedido. Se envía aunque un operador
+     * esté atendiendo; solo lo impide la ventana de 24 horas.
+     */
+    @Transactional
+    public boolean deliverSystemNotice(UUID conversationId, String body) {
+        Conversation conversation = conversations.findForUpdate(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("La conversación no existe"));
+        Instant now = Instant.now();
+        if (!conversation.isCustomerServiceWindowOpen(now)) {
+            return false;
+        }
+        entityManager.persist(Message.pendingText(Uuids.v7(), conversationId, Message.SenderType.SYSTEM, body, now));
+        conversation.registerActivity(now);
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReceivedImage> receivedImages(UUID conversationId) {
+        return history.receivedImages(conversationId);
+    }
+
+    public byte[] readImage(ReceivedImage image) {
+        try {
+            return mediaStorage.read(image.storageKey());
+        } catch (IOException e) {
+            throw new IllegalStateException("No se pudo leer la imagen guardada", e);
+        }
     }
 
     @Transactional(readOnly = true)

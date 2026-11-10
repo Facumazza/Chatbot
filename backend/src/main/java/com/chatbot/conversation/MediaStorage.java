@@ -9,6 +9,8 @@ public interface MediaStorage {
 
     StoredMedia store(UUID tenantId, UUID mediaId, String extension, ContentWriter writer) throws IOException;
 
+    byte[] read(String storageKey) throws IOException;
+
     @FunctionalInterface
     interface ContentWriter {
         void writeTo(OutputStream target) throws IOException;

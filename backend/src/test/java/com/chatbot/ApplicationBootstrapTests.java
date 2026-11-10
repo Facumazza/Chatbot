@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 class ApplicationBootstrapTests extends IntegrationTest {
 
-    private static final int APPLICATION_TABLES = 21;
+    private static final int APPLICATION_TABLES = 22;
     private static final int SESSION_TABLES = 2;
 
 
@@ -27,7 +27,7 @@ class ApplicationBootstrapTests extends IntegrationTest {
                 """,
                 Integer.class);
 
-        assertThat(applied).isEqualTo(4);
+        assertThat(applied).isEqualTo(5);
         assertThat(tables).isEqualTo(APPLICATION_TABLES + SESSION_TABLES);
     }
 

@@ -41,6 +41,16 @@ public class CatalogService {
         return lastSync.isPresent() && lastSync.get().plus(properties.maxAge()).isAfter(clock.instant());
     }
 
+    /** Id del producto en la web de origen, para cargar pedidos allí. */
+    public Optional<String> externalId(UUID productId) {
+        return repository.externalId(TenantContext.require(), productId);
+    }
+
+    /** Si la web pide una imagen de diseño para este producto. */
+    public boolean requiresImage(UUID productId) {
+        return repository.requiresImage(TenantContext.require(), productId);
+    }
+
     public List<ProductSummary> findProducts(String query) {
         List<Product> products = repository.activeProducts(TenantContext.require());
         List<Product> matches = products.stream().filter(product -> matches(product, query)).toList();

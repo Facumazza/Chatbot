@@ -60,6 +60,22 @@ class ConversationHistory {
                 .list();
     }
 
+    List<ReceivedImage> receivedImages(UUID conversationId) {
+        return jdbc.sql("""
+                SELECT mm.id AS media_id, mm.storage_key, mm.mime_type, mm.created_at AS received_at,
+                       mm.download_status = 'STORED' AS stored
+                FROM message_media mm
+                JOIN messages m ON m.tenant_id = mm.tenant_id AND m.id = mm.message_id
+                WHERE mm.tenant_id = :tenantId AND m.conversation_id = :conversationId
+                  AND mm.mime_type LIKE 'image/%' AND mm.download_status IN ('PENDING', 'STORED')
+                ORDER BY mm.created_at
+                """)
+                .param("tenantId", TenantContext.require())
+                .param("conversationId", conversationId)
+                .query(ReceivedImage.class)
+                .list();
+    }
+
     /** Los archivos se describen: el modelo no ve imágenes ni escucha audios en esta versión. */
     private static String describeInbound(String type, String body, String filename) {
         String caption = body == null || body.isBlank() ? "" : " con el texto: " + body;

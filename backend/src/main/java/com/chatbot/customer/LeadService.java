@@ -69,6 +69,18 @@ public class LeadService {
         return leadId;
     }
 
+    /** La oportunidad se convirtió en un pedido. */
+    @Transactional
+    public void markWon(UUID conversationId) {
+        jdbc.sql("""
+                UPDATE leads SET status = 'WON', closed_at = now(), updated_at = now(), version = version + 1
+                WHERE tenant_id = :tenantId AND conversation_id = :conversationId AND status NOT IN ('WON', 'LOST')
+                """)
+                .param("tenantId", TenantContext.require())
+                .param("conversationId", conversationId)
+                .update();
+    }
+
     private Optional<UUID> openLead(UUID tenantId, UUID conversationId) {
         return jdbc.sql("""
                 SELECT id FROM leads
