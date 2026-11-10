@@ -1,13 +1,20 @@
 package com.chatbot.conversation;
 
+import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 interface ConversationRepository extends JpaRepository<Conversation, UUID> {
+
+    /** Bloquea la fila: el operador no puede tomar la conversación mientras se decide el envío. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Conversation c WHERE c.id = :id")
+    Optional<Conversation> findForUpdate(@Param("id") UUID id);
 
     @Query("""
             SELECT c FROM Conversation c

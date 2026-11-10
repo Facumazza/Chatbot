@@ -62,6 +62,20 @@ public class Conversation {
         return status;
     }
 
+    public UUID getCustomerId() {
+        return customerId;
+    }
+
+    /** @return false si la conversación ya no estaba a cargo de la IA */
+    boolean requestAgent() {
+        if (status != Status.ACTIVE) {
+            return false;
+        }
+        status = Status.WAITING_FOR_AGENT;
+        updatedAt = Instant.now();
+        return true;
+    }
+
     public boolean isCustomerServiceWindowOpen(Instant now) {
         return lastInboundAt != null && lastInboundAt.plus(CUSTOMER_SERVICE_WINDOW).isAfter(now);
     }

@@ -14,6 +14,16 @@ interface MessageRepository extends JpaRepository<Message, UUID> {
 
     boolean existsByWamid(String wamid);
 
+    @Query("""
+            SELECT count(m) > 0 FROM Message m
+            WHERE m.conversationId = :conversationId
+              AND m.direction = com.chatbot.conversation.Message.Direction.INBOUND
+              AND m.createdAt > :after
+            """)
+    boolean existsInboundAfter(@Param("conversationId") UUID conversationId, @Param("after") Instant after);
+
+    boolean existsByConversationIdAndDirectionAndBody(UUID conversationId, Message.Direction direction, String body);
+
     /** Devuelve 0 si Meta reenvió un mensaje ya guardado. */
     @Modifying
     @Query(nativeQuery = true, value = """

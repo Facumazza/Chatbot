@@ -22,6 +22,7 @@ public class ConversationService {
     private final MediaQueue mediaQueue;
     private final TurnQueue turnQueue;
     private final CustomerService customers;
+    private final ConversationTransitions transitions;
     private final EntityManager entityManager;
 
     ConversationService(
@@ -30,13 +31,21 @@ public class ConversationService {
             MediaQueue mediaQueue,
             TurnQueue turnQueue,
             CustomerService customers,
+            ConversationTransitions transitions,
             EntityManager entityManager) {
         this.conversations = conversations;
         this.messages = messages;
         this.mediaQueue = mediaQueue;
         this.turnQueue = turnQueue;
         this.customers = customers;
+        this.transitions = transitions;
         this.entityManager = entityManager;
+    }
+
+    @Transactional(readOnly = true)
+    public Conversation get(UUID conversationId) {
+        return conversations.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("La conversación no existe"));
     }
 
     /** Guarda el mensaje y deja pendiente su respuesta. Es seguro repetirlo con el mismo mensaje. */
@@ -89,6 +98,47 @@ public class ConversationService {
         entityManager.persist(message);
         conversation.registerActivity(now);
         return message.getId();
+    }
+
+    /** Pasa la conversación a la cola de operadores y deja registro del motivo. */
+    @Transactional
+    public boolean requestAgent(UUID conversationId, String reason) {
+        Conversation conversation = conversations.findForUpdate(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("La conversación no existe"));
+        if (!conversation.requestAgent()) {
+            return false;
+        }
+        transitions.record(conversationId, Conversation.Status.ACTIVE, Conversation.Status.WAITING_FOR_AGENT,
+                "ASSISTANT", reason);
+        log.info("Conversación {} derivada a un operador", conversationId);
+        return true;
+    }
+
+    /**
+     * Control final antes de enviar una respuesta automática. Se descarta si un operador tomó la
+     * conversación, si llegó un mensaje nuevo después de empezar el turno o si venció la ventana.
+     *
+     * @param afterHandoff la respuesta avisa una derivación hecha en este mismo turno
+     */
+    @Transactional
+    public boolean deliverAutomaticReply(UUID conversationId, String body, Instant turnStartedAt, boolean afterHandoff) {
+        Conversation conversation = conversations.findForUpdate(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("La conversación no existe"));
+        Conversation.Status expected = afterHandoff ? Conversation.Status.WAITING_FOR_AGENT : Conversation.Status.ACTIVE;
+        Instant now = Instant.now();
+        if (conversation.getStatus() != expected
+                || (!afterHandoff && messages.existsInboundAfter(conversationId, turnStartedAt))
+                || !conversation.isCustomerServiceWindowOpen(now)) {
+            return false;
+        }
+        entityManager.persist(Message.pendingText(Uuids.v7(), conversationId, Message.SenderType.ASSISTANT, body, now));
+        conversation.registerActivity(now);
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean alreadySent(UUID conversationId, String body) {
+        return messages.existsByConversationIdAndDirectionAndBody(conversationId, Message.Direction.OUTBOUND, body);
     }
 
     private Conversation openConversation(UUID tenantId, UUID accountId, UUID customerId) {

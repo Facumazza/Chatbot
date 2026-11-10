@@ -1,0 +1,117 @@
+[
+  {
+    "type": "function",
+    "name": "buscar_productos",
+    "description": "Devuelve los productos activos con su enlace, precio base, descuento mayorista, tamaños de estampa con medidas y precio, talles, colores y posiciones de estampado. Usala antes de hablar de un producto o de sus precios.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": ["string", "null"],
+          "description": "Palabras del producto buscado, por ejemplo 'remera' o 'taza'. null para listar todo."
+        }
+      },
+      "required": ["query"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "calcular_presupuesto",
+    "description": "Calcula el precio exacto de un pedido con los precios vigentes. Es la única fuente válida de importes. Se cobra una sola estampa por prenda, según el diseño más grande.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "product_id": {
+          "type": "string",
+          "description": "id devuelto por buscar_productos."
+        },
+        "design_size": {
+          "type": ["string", "null"],
+          "description": "Tamaño del diseño más grande: CHICA, MEDIA o GRANDE. null si el producto no tiene tamaños."
+        },
+        "lines": {
+          "type": "array",
+          "description": "Una línea por cada combinación de talle y color.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "quantity": { "type": "integer", "description": "Unidades de esta línea." },
+              "size": { "type": ["string", "null"], "description": "Talle, o null si el producto no usa talles." },
+              "color": { "type": ["string", "null"], "description": "Color, o null si no se eligió." }
+            },
+            "required": ["quantity", "size", "color"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["product_id", "design_size", "lines"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "buscar_preguntas_frecuentes",
+    "description": "Busca respuestas cargadas por la empresa sobre envíos, plazos, medios de pago, cambios y otras políticas.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": { "type": "string", "description": "Tema consultado, por ejemplo 'envíos al interior'." }
+      },
+      "required": ["query"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "registrar_datos_cliente",
+    "description": "Guarda datos que el cliente dio en la charla. Usá null para lo que no dijo.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "full_name": { "type": ["string", "null"], "description": "Nombre con el que se presentó." },
+        "locality": { "type": ["string", "null"], "description": "Ciudad o localidad." },
+        "interest": { "type": ["string", "null"], "description": "Interés o necesidad en pocas palabras." }
+      },
+      "required": ["full_name", "locality", "interest"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "registrar_oportunidad",
+    "description": "Registra o actualiza el pedido que el cliente está armando, con los datos conocidos hasta ahora. Si ya se calculó un presupuesto, queda adjunto. También adjunta los diseños que envió.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "product_id": { "type": ["string", "null"], "description": "id del producto, si se eligió." },
+        "quantity": { "type": ["integer", "null"], "description": "Cantidad total de unidades." },
+        "sizes": { "type": ["string", "null"], "description": "Talles y cantidades, por ejemplo '3 M, 2 L'." },
+        "colors": { "type": ["string", "null"], "description": "Colores elegidos." },
+        "design": { "type": ["string", "null"], "description": "Tamaño y posiciones del diseño, por ejemplo 'chica en el frente'." },
+        "notes": { "type": ["string", "null"], "description": "Otros datos útiles para el operador." }
+      },
+      "required": ["product_id", "quantity", "sizes", "colors", "design", "notes"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "derivar_a_operador",
+    "description": "Pasa la conversación a una persona del equipo. Después de usarla, avisale al cliente que lo van a atender y no prometas tiempos.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "reason": { "type": "string", "description": "Motivo breve, para el operador." }
+      },
+      "required": ["reason"],
+      "additionalProperties": false
+    }
+  }
+]

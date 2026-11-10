@@ -2,6 +2,10 @@ whatsapp:
   app-secret: test-app-secret
   verify-token: test-verify-token
 
+llm:
+  api-key: clave-de-prueba
+  model: gpt-6.1-terra
+
 app:
   security:
     # Clave solo para tests: 32 bytes en Base64.

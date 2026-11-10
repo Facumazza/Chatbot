@@ -27,7 +27,7 @@ class ApplicationBootstrapTests extends IntegrationTest {
                 """,
                 Integer.class);
 
-        assertThat(applied).isEqualTo(3);
+        assertThat(applied).isEqualTo(4);
         assertThat(tables).isEqualTo(APPLICATION_TABLES + SESSION_TABLES);
     }
 

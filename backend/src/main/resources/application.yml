@@ -54,11 +54,34 @@ whatsapp:
     display-phone-number: ${WHATSAPP_DISPLAY_PHONE_NUMBER:}
     access-token: ${WHATSAPP_ACCESS_TOKEN:}
 
+# Proveedor del modelo. OpenAI: api-format responses. Gemini: chat-completions con
+# base-url https://generativelanguage.googleapis.com/v1beta/openai
+llm:
+  api-format: ${LLM_API_FORMAT:responses}
+  api-key: ${LLM_API_KEY:}
+  base-url: ${LLM_BASE_URL:https://api.openai.com/v1}
+  model: ${LLM_MODEL:gpt-6.1-terra}
+  reasoning-effort: ${LLM_REASONING_EFFORT:low}
+  # Incluye los tokens de razonamiento.
+  max-output-tokens: 4000
+  timeout: 60s
+  # USD por millón de tokens, de la página de precios de OpenAI al 2026-11-10.
+  # Los modelos gratuitos no figuran: su costo queda vacío.
+  pricing:
+    "[gpt-6.1-terra]": { input: 1.00, cached-input: 0.05, output: 5.00 }
+    "[gpt-6-luna]": { input: 0.10, cached-input: 0.01, output: 0.50 }
+    "[gpt-6.1-sol]": { input: 2.00, cached-input: 0.10, output: 10.00 }
+
+catalog:
+  sync-interval: PT15M
+  grenlus:
+    api-url: ${CATALOG_GRENLUS_API_URL:}
+    public-url: ${CATALOG_GRENLUS_PUBLIC_URL:https://grenlus.pages.dev}
+    max-age: PT2H
+
 app:
   security:
     encryption-key: ${ENCRYPTION_KEY:}
-  dev-echo:
-    enabled: ${DEV_ECHO_ENABLED:false}
   media:
     storage-path: ${MEDIA_STORAGE_PATH:storage/media}
     max-size: ${MEDIA_MAX_SIZE:25MB}
@@ -67,6 +90,7 @@ app:
     webhook-delay: PT1S
     outbound-delay: PT1S
     media-delay: PT5S
+    turn-delay: PT1S
 
 springdoc:
   api-docs:

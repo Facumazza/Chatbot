@@ -54,6 +54,8 @@ public abstract class IntegrationTest {
     @DynamicPropertySource
     static void metaUrl(DynamicPropertyRegistry registry) {
         registry.add("whatsapp.graph-base-url", META::baseUrl);
+        registry.add("llm.base-url", () -> META.baseUrl() + "/v1");
+        registry.add("catalog.grenlus.api-url", () -> META.baseUrl() + "/grenlus");
     }
 
     @BeforeEach

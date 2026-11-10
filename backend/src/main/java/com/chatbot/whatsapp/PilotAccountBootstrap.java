@@ -8,12 +8,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 /** Registra la empresa piloto y su número desde el entorno. El alta real de empresas llega después del MVP. */
 @Component
+@Order(1)
 class PilotAccountBootstrap implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(PilotAccountBootstrap.class);

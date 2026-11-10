@@ -29,6 +29,11 @@ public class Customer {
     @Column(name = "wa_profile_name")
     private String waProfileName;
 
+    @Column(name = "full_name")
+    private String fullName;
+
+    private String locality;
+
     @Column(name = "last_seen_at")
     private Instant lastSeenAt;
 
@@ -51,6 +56,25 @@ public class Customer {
 
     String getPhoneNumber() {
         return phoneNumber;
+    }
+
+    /** Nombre para dirigirse al cliente: el que dio en la charla o, si no, el de su perfil. */
+    String displayName() {
+        return fullName != null ? fullName : waProfileName;
+    }
+
+    String getLocality() {
+        return locality;
+    }
+
+    void completeDetails(String newFullName, String newLocality) {
+        if (newFullName != null) {
+            this.fullName = newFullName;
+        }
+        if (newLocality != null) {
+            this.locality = newLocality;
+        }
+        this.updatedAt = Instant.now();
     }
 
     void linkWaUserId(String value) {
