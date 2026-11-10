@@ -43,6 +43,31 @@ management:
     health:
       show-details: never
 
+whatsapp:
+  app-secret: ${WHATSAPP_APP_SECRET:}
+  verify-token: ${WHATSAPP_VERIFY_TOKEN:}
+  graph-base-url: ${WHATSAPP_GRAPH_BASE_URL:https://graph.facebook.com}
+  api-version: ${WHATSAPP_API_VERSION:v27.0}
+  pilot:
+    phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+    business-account-id: ${WHATSAPP_BUSINESS_ACCOUNT_ID:}
+    display-phone-number: ${WHATSAPP_DISPLAY_PHONE_NUMBER:}
+    access-token: ${WHATSAPP_ACCESS_TOKEN:}
+
+app:
+  security:
+    encryption-key: ${ENCRYPTION_KEY:}
+  dev-echo:
+    enabled: ${DEV_ECHO_ENABLED:false}
+  media:
+    storage-path: ${MEDIA_STORAGE_PATH:storage/media}
+    max-size: ${MEDIA_MAX_SIZE:25MB}
+  workers:
+    enabled: true
+    webhook-delay: PT1S
+    outbound-delay: PT1S
+    media-delay: PT5S
+
 springdoc:
   api-docs:
     enabled: false

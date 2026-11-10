@@ -2,32 +2,19 @@ package com.chatbot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.JdbcTemplate;
 
-@Import(TestcontainersConfiguration.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ApplicationBootstrapTests {
+
+
+class ApplicationBootstrapTests extends IntegrationTest {
 
     private static final int APPLICATION_TABLES = 21;
     private static final int SESSION_TABLES = 2;
 
-    private final HttpClient http = HttpClient.newHttpClient();
 
-    @Value("${local.server.port}")
-    private int port;
 
-    @Autowired
-    private JdbcTemplate jdbc;
 
     @Test
     void migrationsCreateTheFullSchema() {
@@ -40,7 +27,7 @@ class ApplicationBootstrapTests {
                 """,
                 Integer.class);
 
-        assertThat(applied).isEqualTo(2);
+        assertThat(applied).isEqualTo(3);
         assertThat(tables).isEqualTo(APPLICATION_TABLES + SESSION_TABLES);
     }
 
@@ -68,16 +55,16 @@ class ApplicationBootstrapTests {
     }
 
     @Test
-    void webhookPathIsReachableWithoutSessionOrCsrf() throws Exception {
+    void webhookIsReachableWithoutSessionOrCsrf() throws Exception {
         HttpRequest request = request("/webhooks/whatsapp")
                 .POST(HttpRequest.BodyPublishers.ofString("{}"))
                 .build();
 
         HttpResponse<String> response = send(request);
 
-        // 404 porque el endpoint llega en la Etapa 5: ni 401 ni 403.
-        assertThat(response.statusCode()).isEqualTo(404);
-        assertThat(response.body()).contains("correlationId");
+        // 401 sin cuerpo: lo rechazó el controlador por la firma, no Spring Security.
+        assertThat(response.statusCode()).isEqualTo(401);
+        assertThat(response.body()).isEmpty();
     }
 
     @Test
@@ -100,15 +87,9 @@ class ApplicationBootstrapTests {
                 .hasValueSatisfying(id -> assertThat(id).doesNotContain("forged").hasSize(36));
     }
 
-    private HttpResponse<String> get(String path) throws IOException, InterruptedException {
+    private HttpResponse<String> get(String path) throws Exception {
         return send(request(path).GET().build());
     }
 
-    private HttpRequest.Builder request(String path) {
-        return HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
-    }
 
-    private HttpResponse<String> send(HttpRequest request) throws IOException, InterruptedException {
-        return http.send(request, HttpResponse.BodyHandlers.ofString());
-    }
 }

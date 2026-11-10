@@ -1,0 +1,13 @@
+whatsapp:
+  app-secret: test-app-secret
+  verify-token: test-verify-token
+
+app:
+  security:
+    # Clave solo para tests: 32 bytes en Base64.
+    encryption-key: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+  workers:
+    enabled: false
+  media:
+    storage-path: target/test-media
+    max-size: 1KB
