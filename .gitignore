@@ -1,0 +1,14 @@
+# Secretos
+.env
+.env.*
+!.env.example
+
+# Archivos del sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Datos locales
+storage/

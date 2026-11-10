@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: chatbot-backend
+  threads:
+    virtual:
+      enabled: true
+  autoconfigure:
+    # Sin usuario generado: el login real de operadores llega en la Etapa 8.
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  session:
+    jdbc:
+      # Las tablas de sesión las crea Flyway.
+      initialize-schema: never
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+  servlet:
+    session:
+      timeout: 8h
+      cookie:
+        http-only: true
+        same-site: lax
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"
+  level:
+    com.chatbot: INFO
